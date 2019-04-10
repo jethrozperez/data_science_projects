@@ -1,0 +1,66 @@
+## Load Packages
+library(BTYDplus)
+library(hypergeo)
+library(BTYD)
+
+## Load Data
+pareto<-read.csv("pareto.csv", stringsAsFactors = FALSE)
+head(pareto)
+
+## Convert Date from Character to Date in proper format
+class(pareto$date)
+pareto$date<- as.Date(pareto$date, "%m/%d/%y")
+
+## Convert to Elog data frame by= 7 is for weeks and plot Incremental
+weekly_inc_total<- elog2inc(pareto, by=7, first=TRUE)
+weekly_inc_repeat<- elog2inc(pareto, by=7, first=FALSE)
+
+## Convert to Elog data and Plot Cumulative
+weekly_cum_total<- elog2cum(pareto, by=7, first=TRUE)
+weekly_cum_repeat<- elog2cum(pareto, by=7, first=FALSE)
+
+## Plot
+plot(weekly_inc_total)
+plot(weekly_inc_repeat)
+lines(weekly_inc_repeat, col="red")
+
+## Cumulative
+weekly_cum_total<- elog2cum(pareto, by=7, first=TRUE)
+weekly_cum_repeat<- elog2cum(pareto, by=7, first=FALSE)
+
+## Plot
+plot(weekly_cum_total, type = "b", frame=FALSE, main="Cumulative")
+lines(weekly_cum_repeat, col="red")
+
+## Convert to CBS Format
+pareto_elog<- elog2cbs(pareto, units= "week", T.cal ="2017-01-01")
+head(pareto_elog)
+
+## Estimate/Plot Regularity
+k.wheat<- estimateRegularity(pareto, method="wheat", plot=TRUE, title= "Wheat & Morrison")
+k.mle<- estimateRegularity(pareto,method= "mle", plot=TRUE, title="Maximum Likelihood")
+
+## Pareto NBD
+round(params.nbd<- nbd.EstimateParameters(pareto_elog),3)
+nbd.cbs.LL(params.nbd,pareto_elog)
+
+params.pnbd<- BTYD::pnbd.EstimateParameters(pareto_elog)
+names(params.pnbd1) <-c("r","alpha","s","beta")
+round(params.pnbd1, 3)
+
+## Predict Future Expected Transactions who have had 5 transactions in 12 weeks then are inactive for 40 weeks
+est5.pnbd<- BTYD::pnbd.ConditionalExpectedTransactions(params.pnbd1, T.star=52, x=1:5, t.x=12, T.cal=52)
+for (i in 1:5) { 
+  cat("x =", i, ":", sprintf("%5.3f", est5.pnbd[i]), "\n")}
+
+## P(Alive) for customers who have made 1 to 5 transactions in the first 60 weeks and then remained inactive for 40 weeks
+p.alive.pnbd<- BTYD::pnbd.PAlive(params.pnbd1,x=1:5, t.x=60,T.cal=100)
+
+params.bgnbd <- BTYD::bgnbd.EstimateParameters(pareto_elog) 
+for (i in 1:5) { 
+  cat("x=",i,sprintf("%5.2f%%", 100*p.alive.pnbd[i]),"\n")
+}
+## Estimate Parameters For Multiple Models 
+params.bgnbd <- BTYD::bgnbd.EstimateParameters(pareto_elog) ## BG/NBD
+params.bcgnbd <- bgcnbd.EstimateParameters(pareto_elog)     ## BG/CNBD-k
+params.mbgnbd <- mbgnbd.EstimateParameters(pareto_elog)     ## MBG/NBD
