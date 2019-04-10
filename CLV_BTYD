@@ -64,3 +64,17 @@ for (i in 1:5) {
 params.bgnbd <- BTYD::bgnbd.EstimateParameters(pareto_elog) ## BG/NBD
 params.bcgnbd <- bgcnbd.EstimateParameters(pareto_elog)     ## BG/CNBD-k
 params.mbgnbd <- mbgnbd.EstimateParameters(pareto_elog)     ## MBG/NBD
+params.mbgcnbd <- mbgcnbd.EstimateParameters(pareto_elog)   ## MBG/CNBD-k
+
+row<- function(params,LL) {
+  names(params) <-c("k","r","alpha","a","b")
+  c(round(params,3), LL = round(LL))
+}
+rbind('BG/NBD'          = row(c(1,params.bgnbd), 
+                              BTYD::bgnbd.cbs.LL(params.bgnbd,pareto_elog),
+      'BG/CNBD-k')      = row(params.bgcnbd,
+                              bgcnbd.cbs.LL(params.bgcnbd,pareto_elog)),
+      'MBG/NBD'         = row(params.mbgnbd,
+                              mbgcnbd.cbs.LL(params.mbgnbd, pareto_elog)),
+      'MBG/CNBD-k'      = row(params.mbgcnbd,
+                              mbgcnbd.cbs.LL(params.mbgcnbd, pareto_elog)))
